@@ -24,7 +24,7 @@ Oauth Test listening on port 8080
 Then just open your browser to [http://localhost:8080/](http://localhost:8080/)
 
 ## The Problem
-There is a race condition which presents when tokens are stored in a system with assymetric read vs write latency (that is, when writes take longer than reads). This results in a *double loop* of the OAuth flow, as well as a *double write* of the access tokens.
+There is a race condition which presents when tokens are stored in a system with asymmetric read vs write latency (that is, when writes take longer than reads). This results in a *double loop* of the OAuth flow, as well as a *double write* of the access tokens.
 
 The logs observed at execution time are:
 

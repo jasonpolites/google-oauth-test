@@ -1,0 +1,15 @@
+{
+  "name": "oauth-test",
+  "version": "1.0.0",
+  "description": "",
+  "main": "oauth_test.js",
+  "scripts": {
+    "start": "node oauth_test.js"
+  },
+  "author": "Jason Polites",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.17.1",
+    "googleapis": "^39.2.0"
+  }
+}

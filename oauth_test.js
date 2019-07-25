@@ -41,7 +41,9 @@ const TOKEN_KEY = 'accessToken';
 const TOKEN_STORE = new MemoryTokenStore();
 
 // Load the app secret
+console.log(`Loading Client Secret...`)
 const clientSecretJson = JSON.parse(fs.readFileSync(path.join(__dirname, 'client_secret.json')));
+console.log(`Client Secret Loaded.`)
 
 let accessToken = undefined;
 let oauth2Client = undefined;
@@ -51,9 +53,10 @@ let oauth2Client = undefined;
  *************************************/
 const tokenChecker = async (req, res, next) => {
 
-  console.log(`In tokenChecker at: ${Date.now()}`)
+  console.log(`Checking auth token...`)
 
   if(!oauth2Client) {
+    console.log(`Creating new oauth2Client...`)
     oauth2Client = new google.auth.OAuth2(
       clientSecretJson.web.client_id,
       clientSecretJson.web.client_secret,
@@ -61,7 +64,7 @@ const tokenChecker = async (req, res, next) => {
     );
   }
   if(!accessToken) {
-
+    console.log(`No access token in scope, attempting to load...`)
     accessToken = await TOKEN_STORE.loadTokenSync(TOKEN_KEY);
 
     // Listen for refresh tokens
@@ -84,9 +87,9 @@ const tokenChecker = async (req, res, next) => {
 
       // Just for debugging/info
       if(accessToken && accessToken.expiry_date < max_expiry) {
-        console.log(`Access Token expired`)
+        console.log(`Access Token expired, redirecting to oauth flow`)
       } else {
-        console.log(`No access token found in database`)
+        console.log(`No access token found in database, redirecting to oauth flow`)
       }
 
       // Generate + redirect to OAuth2 consent form URL
@@ -98,9 +101,11 @@ const tokenChecker = async (req, res, next) => {
       });
 
       console.log(`redirecting to ${redirectUrl}`);
+
       res.redirect(redirectUrl);
     }
   } else {
+    console.log(`Using token in scope`)
     next();
   }
 }
@@ -111,7 +116,17 @@ const tokenChecker = async (req, res, next) => {
 const express = require('express');
 const app = express();
 
-// The test path will do a token check
+// The root path will do a token check
+app.get('/', tokenChecker, async (req, res) => {
+  try {
+    await sleep(100);
+    res.status(200).send(`OK`);
+  } catch (e) {
+    res.status(500).send(e);
+  }
+});
+
+// The test path will also do a token check
 app.get('/test', tokenChecker, async (req, res) => {
   try {
     await sleep(100);

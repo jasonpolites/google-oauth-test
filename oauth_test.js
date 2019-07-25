@@ -20,15 +20,15 @@ class MemoryTokenStore {
   async saveTokenSync(tokenKey, tokenValue) {
     // Simulate a slow save
     console.log(`Saving to database...`)
-    await sleep(1000);
+    await sleep(3000);
     this.tokenStore[this.rootRef][tokenKey] = tokenValue;
     console.log(`Saved to database`)
     return tokenValue;
   }
 
   async loadTokenSync(tokenKey) {
-    // Simulate a slow load
-    await sleep(1000);    
+    // Simulate a fast load
+    await sleep(100);    
     return this.tokenStore[this.rootRef][tokenKey];
   }
 }
@@ -67,6 +67,8 @@ const tokenChecker = async (req, res, next) => {
     console.log(`No access token in scope, attempting to load...`)
     accessToken = await TOKEN_STORE.loadTokenSync(TOKEN_KEY);
 
+    let max_expiry = Date.now() + 60000;
+
     // Listen for refresh tokens
     oauth2Client.on('tokens', async (tokens) => {
       console.log(`in oauth2Client.on(...) about to save a token`)
@@ -75,9 +77,7 @@ const tokenChecker = async (req, res, next) => {
       } else {
         console.error(`Expected a refresh_token, but none was found: ${JSON.stringify(tokens, null, 2)}`)
       }
-    });
-
-    let max_expiry = Date.now() + 60000;
+    });          
 
     if (accessToken && ((accessToken.refresh_token) || (accessToken.expiry_date && accessToken.expiry_date >= max_expiry))) {
       console.log(`Token is not expired or will refresh`)
@@ -100,8 +100,6 @@ const tokenChecker = async (req, res, next) => {
         prompt: 'consent'
       });
 
-      console.log(`redirecting to ${redirectUrl}`);
-
       res.redirect(redirectUrl);
     }
   } else {
@@ -118,32 +116,25 @@ const app = express();
 
 // The root path will do a token check
 app.get('/', tokenChecker, async (req, res) => {
-  try {
-    await sleep(100);
-    res.status(200).send(`OK`);
-  } catch (e) {
-    res.status(500).send(e);
-  }
+  res.status(200).send(`OK`);
 });
 
 // The test path will also do a token check
 app.get('/test', tokenChecker, async (req, res) => {
-  try {
-    await sleep(100);
-    res.status(200).send(`OK`);
-  } catch (e) {
-    res.status(500).send(e);
-  }
+  res.status(200).send(`OK`);
 });
 
 app.get(`/${OAUTH_CALLBACK_ROUTE}`, async (req, res) => {
   try {
     const code = req.query.code;
+
+    // Do I need to await this??
     const {tokens} = await oauth2Client.getToken(code);
 
     console.log(`in /${OAUTH_CALLBACK_ROUTE} about to set token credentials`)
 
     // Setting credentials will trigger the on('tokens') event (?)
+    // Do I need to await this??
     await oauth2Client.setCredentials(tokens);
 
     res.redirect(req.query.state);
